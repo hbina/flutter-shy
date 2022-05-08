@@ -13,4 +13,4 @@ export const load_openapi_definition = async ({
   content,
 }: {
   content: string;
-}) => apiCall<void>("load_openapi_definition", { content });
+}) => apiCall("load_openapi_definition", { content });

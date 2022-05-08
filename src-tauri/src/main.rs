@@ -3,12 +3,10 @@
   windows_subsystem = "windows"
 )]
 
-#[macro_use]
-extern crate lazy_static;
-
 mod cmd;
 mod error;
 mod model;
+mod parser;
 
 fn main() {
   tauri::Builder::default()
