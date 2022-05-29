@@ -2,7 +2,7 @@ import { Formik, FormikProps } from "formik";
 import { cloneDeep } from "lodash";
 import { useState } from "react";
 
-import { OpenApiSchema } from "./types";
+import { OpenApiPath } from "./types";
 
 const CIRCULAR_BOX: React.CSSProperties = {
   display: "flex",
@@ -14,15 +14,18 @@ const CIRCULAR_BOX: React.CSSProperties = {
   padding: "1px",
 };
 
-export const OpenApiContent = ({ schema }: { schema: OpenApiSchema }) => {
-  const [paths, setPaths] = useState(
-    Object.entries(schema.paths).map(([path, pathDetails]) => ({
-      path,
-      visible: false,
-      pathDetails,
-    }))
+export const ConfigurePaths = ({
+  openApiPaths,
+}: {
+  openApiPaths: OpenApiPath;
+}) => {
+  const paths = Object.entries(openApiPaths).map(([path, pathDetails]) => ({
+    path,
+    pathDetails,
+  }));
+  const [visibles, setVisibles] = useState(
+    Object.entries(openApiPaths).map(() => false)
   );
-  console.log("paths", paths);
 
   return (
     <div
@@ -30,10 +33,9 @@ export const OpenApiContent = ({ schema }: { schema: OpenApiSchema }) => {
         display: "flex",
         flexDirection: "column",
         rowGap: "10px",
-        padding: "5px",
       }}
     >
-      {paths.map(({ path, visible, pathDetails }, idx, arr) => (
+      {paths.map(({ path, pathDetails }, idx) => (
         <div
           key={path}
           style={{
@@ -43,22 +45,24 @@ export const OpenApiContent = ({ schema }: { schema: OpenApiSchema }) => {
         >
           <button
             onClick={() => {
-              console.log("clicked on path", idx);
-              setPaths((paths) => {
-                const newPaths = cloneDeep(paths);
-                paths[idx].visible = !paths[idx].visible;
-                return newPaths;
+              setVisibles((visibles) => {
+                const newVisibles = cloneDeep(visibles);
+                newVisibles[idx] = !newVisibles[idx];
+                return newVisibles;
               });
             }}
           >
             {path}
           </button>
-          {visible &&
+          {visibles[idx] === true &&
             Object.entries(pathDetails).map(([method, methodDetails]) => (
               <Formik
                 key={method}
-                onSubmit={async () => {
-                  console.log("perform request");
+                onSubmit={async (v) => {
+                  let finalPath = path;
+                  Object.entries(v).forEach(([key, value]) => {
+                    finalPath = finalPath.replaceAll(`{${key}}`, `${value}`);
+                  });
                 }}
                 initialValues={{}}
               >
@@ -82,7 +86,7 @@ export const OpenApiContent = ({ schema }: { schema: OpenApiSchema }) => {
                       }}
                     >
                       <div>
-                        {method} - {methodDetails.operationId}
+                        {method.toUpperCase()} - {methodDetails.operationId}
                       </div>
                       <div>
                         <button
@@ -105,6 +109,7 @@ export const OpenApiContent = ({ schema }: { schema: OpenApiSchema }) => {
                           </tr>
                           {methodDetails.parameters.map((param, idx, arr) => (
                             <tr
+                              key={idx}
                               style={{
                                 borderBottom:
                                   idx === arr.length - 1

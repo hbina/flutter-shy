@@ -1,16 +1,10 @@
-import { invoke } from "@tauri-apps/api";
-
-async function apiCall<O>(
-  funName: string,
-  args: Record<string, unknown>
-): Promise<O> {
-  const result = await invoke<O>(funName, args);
-  // console.log(`calling ${funName} with`, args, " result", result);
-  return result;
-}
-
-export const load_openapi_definition = async ({
-  content,
-}: {
-  content: string;
-}) => apiCall("load_openapi_definition", { content });
+export const resolveStringTemplate = (
+  template: string,
+  translation: Readonly<Record<string, string>>
+) => {
+  let resolvedPath = template;
+  Object.entries(translation).forEach(([key, value]) => {
+    resolvedPath = resolvedPath.replaceAll(`{${key}}`, `${value}`);
+  });
+  return resolvedPath;
+};

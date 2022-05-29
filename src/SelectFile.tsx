@@ -2,7 +2,7 @@ import React from "react";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
 
-import { load_openapi_definition } from "./util";
+import { load_openapi_definition } from "./backend";
 import { OpenApiSchema, ReactSetState, ReactState } from "./types";
 
 export const FILE_SELECT_SCHEMA = Yup.object({
@@ -18,9 +18,8 @@ export const SelectFile = ({
     <Formik
       initialValues={{ fileContent: "" }}
       onSubmit={async (values, actions) => {
-        console.log("values", values);
-        console.log("actions", actions);
         try {
+          setSchema(undefined);
           const object = (await load_openapi_definition({
             content: values.fileContent,
           })) as any;
@@ -31,7 +30,7 @@ export const SelectFile = ({
       }}
       validationSchema={FILE_SELECT_SCHEMA}
     >
-      {({ setStatus, setFieldValue, status, errors, touched }) => (
+      {({ setFieldValue, status, errors, touched }) => (
         <Form>
           <input
             id="fileContent"
@@ -39,7 +38,6 @@ export const SelectFile = ({
             onChange={async (v) => {
               const reader = new FileReader();
               reader.onloadend = (e) => {
-                setStatus(null);
                 setFieldValue(
                   "fileContent",
                   e.target?.result?.toString() ?? ""
