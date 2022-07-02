@@ -23,6 +23,8 @@ export const ConfigurePaths = ({
   pathObjects: ResolvedOpenApiV3.PathsObject;
   axiosInstance: AxiosInstance;
 }) => {
+  const [response, setResponse] = useState<any | undefined>(undefined);
+
   const paths = Object.fromEntries(
     Object.entries(pathObjects).map(([path, pathDetails]) => [
       path,
@@ -79,6 +81,8 @@ export const ConfigurePaths = ({
                     pathTemplate={pathTemplate}
                     method={method}
                     methodDetails={methodDetails}
+                    response={response}
+                    setResponse={setResponse}
                   />
                 )
             )}
@@ -95,11 +99,15 @@ const MethodRow = ({
   pathTemplate,
   method,
   methodDetails,
+  response,
+  setResponse,
 }: {
   axiosInstance: AxiosInstance;
   pathTemplate: string;
   method: string;
   methodDetails: ResolvedOpenApiV3.OperationObject;
+  response: any | undefined;
+  setResponse: React.SetStateAction<any | undefined>;
 }) => {
   return (
     <Formik
@@ -123,25 +131,35 @@ const MethodRow = ({
             case ResolvedOpenApiV3.HttpMethods.GET: {
               axiosInstance
                 .get(resolvedPathTemplate)
-                .then((v) => console.log(v.status, v.data));
+                .then((v) => setResponse(v))
+                .catch((v) => setResponse(v));
               break;
             }
             case ResolvedOpenApiV3.HttpMethods.POST: {
               axiosInstance
-                .post(resolvedPathTemplate, JSON.parse(value["body"]?.value))
-                .then((v) => console.log(v.status, v.data));
+                .post(
+                  resolvedPathTemplate,
+                  JSON.parse(value["request-body"]?.value)
+                )
+                .then((v) => setResponse(v))
+                .catch((v) => setResponse(v));
               break;
             }
             case ResolvedOpenApiV3.HttpMethods.DELETE: {
               axiosInstance
                 .delete(resolvedPathTemplate)
-                .then((v) => console.log(v.status, v.data));
+                .then((v) => setResponse(v))
+                .catch((v) => setResponse(v));
               break;
             }
             case ResolvedOpenApiV3.HttpMethods.PUT: {
               axiosInstance
-                .put(resolvedPathTemplate, JSON.parse(value["body"]?.value))
-                .then((v) => console.log(v.status, v.data));
+                .put(
+                  resolvedPathTemplate,
+                  JSON.parse(value["request-body"]?.value)
+                )
+                .then((v) => setResponse(v))
+                .catch((v) => setResponse(v));
               break;
             }
             default: {
@@ -197,13 +215,13 @@ const MethodRow = ({
             methodDetails={methodDetails}
             setFieldValue={setFieldValue}
             setTouched={setTouched}
-            handleChange={handleChange}
           />
           <RequestBodyRow
             values={values}
             methodDetails={methodDetails}
             setFieldValue={setFieldValue}
           />
+          <ResponseBodyRow response={response} />
         </div>
       )}
     </Formik>
@@ -217,7 +235,6 @@ export const ParameterRow = ({
   setFieldValue,
   setTouched,
   methodDetails,
-  handleChange,
 }: {
   values: Record<string, RequestSetting>;
   errors: FormikErrors<Record<string, RequestSetting>>;
@@ -228,7 +245,6 @@ export const ParameterRow = ({
     b: boolean | undefined
   ) => void;
   methodDetails: ResolvedOpenApiV3.OperationObject;
-  handleChange: (e: React.ChangeEvent<any>) => void;
 }) => (
   <div style={CIRCULAR_BOX}>
     <div>Parameters</div>
@@ -334,8 +350,9 @@ export const RequestBodyRow = ({
                   <div>{JSON.stringify(v)}</div>
                   <textarea
                     onChange={(e) => {
-                      setFieldValue("body", {
-                        in: "body",
+                      // TODO: Supply the media type as well
+                      setFieldValue("request-body", {
+                        in: "request-body",
                         value: e.target.value,
                       });
                     }}
@@ -347,6 +364,19 @@ export const RequestBodyRow = ({
         </div>
       )}
       {!methodDetails?.requestBody && <>No Request Body</>}
+    </div>
+  );
+};
+
+export const ResponseBodyRow = ({
+  response,
+}: {
+  response: any | undefined;
+}) => {
+  return (
+    <div style={CIRCULAR_BOX}>
+      <div>Response Body</div>
+      {response && <div>{JSON.stringify(response, null, 4)}</div>}
     </div>
   );
 };

@@ -1,6 +1,4 @@
-import { yupToFormErrors } from "formik";
 import { OpenAPIV3 } from "openapi-types";
-import * as Yup from "yup";
 
 import { ResolvedOpenApiV3 } from "./types";
 
@@ -57,45 +55,9 @@ export const resolveRefComponents = (
   }
 };
 
+// TODO: Implement this conversion.
 export const resolveValidationSchema = (
   methodDetails: ResolvedOpenApiV3.OperationObject
 ) => {
-  const shape = Object.fromEntries(
-    (methodDetails.parameters ?? []).map((v) => {
-      if (v.required === true) {
-        if (v.schema) {
-          return [
-            `parameter-${v.name}`,
-            Yup.object().shape({
-              value: Yup.number().required(),
-            }),
-          ];
-        } else {
-          return [
-            `parameter-${v.name}`,
-            Yup.object().shape({
-              value: Yup.number().required(),
-            }),
-          ];
-        }
-      } else {
-        if (v.schema) {
-          return [
-            `parameter-${v.name}`,
-            Yup.object().shape({
-              value: Yup.number().required(),
-            }),
-          ];
-        } else {
-          return [
-            `parameter-${v.name}`,
-            Yup.object().shape({
-              value: Yup.number().required(),
-            }),
-          ];
-        }
-      }
-    })
-  );
-  return Yup.object().shape(shape);
+  return undefined;
 };
