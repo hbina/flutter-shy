@@ -2,19 +2,11 @@ import { AxiosInstance } from "axios";
 import { Formik, FormikErrors, FormikProps, FormikTouched } from "formik";
 import { cloneDeep, isEmpty, omitBy } from "lodash";
 import { useState } from "react";
+import { SchemaViewer } from "./SchemaVIewer";
+import { CIRCULAR_BOX } from "./styles";
 import { ResolvedOpenApiV3 } from "./types";
 
 import { resolvePathTemplate, resolveValidationSchema } from "./util";
-
-const CIRCULAR_BOX: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  borderStyle: "inset",
-  borderColor: "black",
-  borderWidth: "1px",
-  borderRadius: "5px",
-  padding: "1px",
-};
 
 export const ConfigurePaths = ({
   pathObjects,
@@ -347,7 +339,20 @@ export const RequestBodyRow = ({
               ([k, v]) => (
                 <div key={k}>
                   <div>{k}</div>
-                  <div>{JSON.stringify(v)}</div>
+                  <div>{JSON.stringify(v.schema)}</div>
+                  <div>
+                    {v.schema && (
+                      <SchemaViewer
+                        value={v.schema}
+                        style={{
+                          ...CIRCULAR_BOX,
+                          display: "flex",
+                          flexDirection: "column",
+                        }}
+                      />
+                    )}
+                    {!!!v.schema && <>No Schema</>}
+                  </div>
                   <textarea
                     onChange={(e) => {
                       // TODO: Supply the media type as well
