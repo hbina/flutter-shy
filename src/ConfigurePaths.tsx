@@ -353,15 +353,6 @@ export const RequestBodyRow = ({
                     )}
                     {!!!v.schema && <>No Schema</>}
                   </div>
-                  <textarea
-                    onChange={(e) => {
-                      // TODO: Supply the media type as well
-                      setFieldValue("request-body", {
-                        in: "request-body",
-                        value: e.target.value,
-                      });
-                    }}
-                  />
                 </div>
               )
             )}
