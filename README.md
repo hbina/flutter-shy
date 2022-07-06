@@ -1,4 +1,4 @@
-# Pinky Pie
+# Flutter Shy
 
 Cross-platform GUI for MongoDB.
 

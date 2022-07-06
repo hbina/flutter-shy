@@ -1,3 +1,4 @@
+import axios from "axios";
 import { OpenAPIV3 } from "openapi-types";
 
 import { ResolvedOpenApiV3 } from "./types";
@@ -28,27 +29,49 @@ export const resolvePathTemplate = (
   }${query.toString()}`;
 };
 
-export const resolveRefComponents = (
+export const resolveRefComponents = async (
   referenceDocument: OpenAPIV3.Document,
   value: any
-): any => {
+): Promise<any> => {
   if (typeof value === "object" && value !== null) {
     if (typeof value["$ref"] === "string") {
-      const reference = value["$ref"].split("/");
-      reference.shift();
-      let resolvedObject = referenceDocument;
-      reference.forEach((key) => {
-        resolvedObject = (resolvedObject as any)[key];
-      });
-      return resolveRefComponents(referenceDocument, resolvedObject);
+      if (value["$ref"].startsWith("#")) {
+        const reference = value["$ref"].split("/");
+        reference.shift();
+        let resolvedObject = referenceDocument;
+        reference.forEach((key) => {
+          resolvedObject = (resolvedObject as any)[key];
+        });
+        const result = await resolveRefComponents(
+          referenceDocument,
+          resolvedObject
+        );
+        return result;
+      } else if (
+        value["$ref"].startsWith("http://") ||
+        value["$ref"].startsWith("https://")
+      ) {
+        const resolvedObject = await axios
+          .get(value["$ref"])
+          .then((v) => v.data)
+          .catch(() => ({}));
+        return await resolveRefComponents(referenceDocument, resolvedObject);
+      }
     } else {
-      return Array.isArray(value)
-        ? value.map((v) => resolveRefComponents(referenceDocument, v))
-        : Object.fromEntries(
-            Object.entries(value).map(([k, v]) => {
-              return [k, resolveRefComponents(referenceDocument, v)];
-            })
-          );
+      if (Array.isArray(value)) {
+        const result = await Promise.all(
+          value.map((v) => resolveRefComponents(referenceDocument, v))
+        );
+        return result;
+      } else {
+        const arr = await Promise.all(
+          Object.entries(value).map(async ([k, v]) =>
+            resolveRefComponents(referenceDocument, v).then((a) => [k, a])
+          )
+        );
+        const result = Object.fromEntries(arr);
+        return result;
+      }
     }
   } else {
     return value;

@@ -28,9 +28,14 @@ const App = () => {
   const [servers, setServers] = useState<Server[]>([]);
 
   useEffect(() => {
-    setResolvedSchema(() =>
-      schema ? resolveRefComponents(schema, schema) : undefined
-    );
+    const f = async () => {
+      if (schema) {
+        const res = await resolveRefComponents(schema, schema);
+        setResolvedSchema(res);
+        console.log("res", res);
+      }
+    };
+    f();
   }, [schema]);
 
   useEffect(() => {
