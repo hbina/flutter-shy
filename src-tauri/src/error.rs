@@ -18,3 +18,15 @@ impl From<apple_bloom::Error> for PError {
     PError::InvalidSwaggerDefinition(e.to_string())
   }
 }
+
+impl From<serde_json::Error> for PError {
+  fn from(e: serde_json::Error) -> Self {
+    PError::InvalidSwaggerDefinition(e.to_string())
+  }
+}
+
+impl From<serde_yaml::Error> for PError {
+  fn from(e: serde_yaml::Error) -> Self {
+    PError::InvalidSwaggerDefinition(e.to_string())
+  }
+}

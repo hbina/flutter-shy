@@ -1,9 +1,10 @@
 import React from "react";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
+import YAML from "yaml";
 
-import { load_openapi_definition } from "./backend";
-import { OpenApiSchema, ReactSetState, ReactState } from "./types";
+import { ReactSetState } from "./types";
+import { OpenAPIV3 } from "openapi-types";
 
 export const FILE_SELECT_SCHEMA = Yup.object({
   fileContent: Yup.object().nullable(),
@@ -12,17 +13,15 @@ export const FILE_SELECT_SCHEMA = Yup.object({
 export const SelectFile = ({
   setSchema,
 }: {
-  setSchema: ReactSetState<undefined | OpenApiSchema>;
+  setSchema: ReactSetState<undefined | OpenAPIV3.Document>;
 }) => {
   return (
     <Formik
       initialValues={{ fileContent: "" }}
-      onSubmit={async (values, actions) => {
+      onSubmit={async (values) => {
         try {
           setSchema(undefined);
-          const object = (await load_openapi_definition({
-            content: values.fileContent,
-          })) as any;
+          const object = YAML.parse(values.fileContent) as OpenAPIV3.Document;
           setSchema(object);
         } catch (e) {
           console.log(e);

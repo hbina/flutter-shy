@@ -1,3 +1,5 @@
+use std::io::Cursor;
+
 use apple_bloom::{from_reader, OpenApi};
 use serde::{Deserialize, Serialize};
 use tauri::command;
@@ -9,7 +11,7 @@ pub struct Parameter {}
 
 #[command]
 pub async fn load_openapi_definition(content: String) -> Result<OpenApi, PError> {
-  let result = from_reader(std::io::Cursor::new(content))?;
+  let result = from_reader(Cursor::new(content))?;
   match &result {
     OpenApi::V2(_) => todo!(),
     OpenApi::V3_0(v) => v3::parse_spec(&*v),
