@@ -1,6 +1,6 @@
-# Pinky Pie
+# Flutter Shy
 
-Cross-platform GUI for MongoDB.
+Cross-platform GUI for cURL.
 
 # Preview
 

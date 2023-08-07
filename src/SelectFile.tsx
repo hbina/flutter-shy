@@ -1,9 +1,8 @@
-import React from "react";
 import { Form, Formik } from "formik";
 import * as Yup from "yup";
 
 import { load_openapi_definition } from "./backend";
-import { OpenApiSchema, ReactSetState, ReactState } from "./types";
+import { OpenApiSchema, ReactSetState } from "./types";
 
 export const FILE_SELECT_SCHEMA = Yup.object({
   fileContent: Yup.object().nullable(),
@@ -17,7 +16,7 @@ export const SelectFile = ({
   return (
     <Formik
       initialValues={{ fileContent: "" }}
-      onSubmit={async (values, actions) => {
+      onSubmit={async (values) => {
         try {
           setSchema(undefined);
           const object = (await load_openapi_definition({

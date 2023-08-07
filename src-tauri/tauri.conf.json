@@ -1,16 +1,23 @@
 {
+  "build": {
+    "beforeDevCommand": "npm run dev",
+    "beforeBuildCommand": "npm run build",
+    "devPath": "http://localhost:1421",
+    "distDir": "../dist",
+    "withGlobalTauri": false
+  },
   "package": {
     "productName": "flutter-shy",
-    "version": "0.1.0"
-  },
-  "build": {
-    "distDir": "../build",
-    "devPath": "http://localhost:3010",
-    "beforeDevCommand": "npm run start",
-    "beforeBuildCommand": "npm run build",
-    "withGlobalTauri": true
+    "version": "0.0.0"
   },
   "tauri": {
+    "allowlist": {
+      "all": false,
+      "shell": {
+        "all": false,
+        "open": true
+      }
+    },
     "bundle": {
       "active": true,
       "targets": "all",
@@ -21,46 +28,19 @@
         "icons/128x128@2x.png",
         "icons/icon.icns",
         "icons/icon.ico"
-      ],
-      "resources": [],
-      "externalBin": [],
-      "copyright": "",
-      "category": "DeveloperTool",
-      "shortDescription": "",
-      "longDescription": "",
-      "deb": {
-        "depends": []
-      },
-      "macOS": {
-        "frameworks": [],
-        "minimumSystemVersion": "",
-        "exceptionDomain": "",
-        "signingIdentity": null,
-        "entitlements": null
-      },
-      "windows": {
-        "certificateThumbprint": null,
-        "digestAlgorithm": "sha256",
-        "timestampUrl": ""
-      }
+      ]
     },
-    "updater": {
-      "active": false
-    },
-    "allowlist": {
-      "all": true
+    "security": {
+      "csp": null
     },
     "windows": [
       {
-        "title": "Pinky Pie",
-        "width": 800,
-        "height": 600,
+        "fullscreen": false,
         "resizable": true,
-        "fullscreen": false
+        "title": "flutter-shy",
+        "width": 800,
+        "height": 600
       }
-    ],
-    "security": {
-      "csp": "default-src blob: data: filesystem: ws: wss: http: https: tauri: 'unsafe-eval' 'unsafe-inline' 'self' img-src: 'self'"
-    }
+    ]
   }
 }

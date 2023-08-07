@@ -1,22 +1,9 @@
-import { Formik, FormikProps } from "formik";
 import { cloneDeep } from "lodash";
 import { useState } from "react";
-import Select from "react-select";
-import { string } from "yup";
 import * as _ from "lodash";
 
-import { OpenApiSchema, OpenApiServers } from "./types";
+import { OpenApiServers } from "./types";
 import { resolveStringTemplate } from "./util";
-
-const CIRCULAR_BOX: React.CSSProperties = {
-  display: "flex",
-  flexDirection: "column",
-  borderStyle: "inset",
-  borderColor: "black",
-  borderWidth: "1px",
-  borderRadius: "5px",
-  padding: "1px",
-};
 
 export const ConfigureServers = ({
   pServers,
@@ -50,31 +37,29 @@ export const ConfigureServers = ({
         flexDirection: "column",
       }}
     >
-      {servers.map(
-        ({ templateUrl, resolvedUrl, variables, translation }, idx) => {
-          return (
-            <div key={templateUrl}>
-              <ServerRow
-                templateAddress={templateUrl}
-                resolvedAddress={resolvedUrl}
-                variables={variables}
-                updateResolvedAddress={(key, value) => {
-                  setServers((v) => {
-                    const cloned = cloneDeep(v);
-                    const server = cloned[idx];
-                    server.translation[key] = value;
-                    server.resolvedUrl = resolveStringTemplate(
-                      server.templateUrl,
-                      server.translation
-                    );
-                    return cloned;
-                  });
-                }}
-              />
-            </div>
-          );
-        }
-      )}
+      {servers.map(({ templateUrl, resolvedUrl, variables }, idx) => {
+        return (
+          <div key={templateUrl}>
+            <ServerRow
+              templateAddress={templateUrl}
+              resolvedAddress={resolvedUrl}
+              variables={variables}
+              updateResolvedAddress={(key, value) => {
+                setServers((v) => {
+                  const cloned = cloneDeep(v);
+                  const server = cloned[idx];
+                  server.translation[key] = value;
+                  server.resolvedUrl = resolveStringTemplate(
+                    server.templateUrl,
+                    server.translation
+                  );
+                  return cloned;
+                });
+              }}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };

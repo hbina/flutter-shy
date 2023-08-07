@@ -66,12 +66,7 @@ export const ConfigurePaths = ({
                 }}
                 initialValues={{}}
               >
-                {({
-                  values,
-                  setFieldValue,
-                  setSubmitting,
-                  submitForm,
-                }: FormikProps<any>) => (
+                {({ values, setFieldValue, submitForm }: FormikProps<any>) => (
                   <div
                     key={method}
                     style={{
@@ -91,7 +86,7 @@ export const ConfigurePaths = ({
                       <div>
                         <button
                           type="submit"
-                          onClick={(v) => {
+                          onClick={() => {
                             submitForm();
                           }}
                         >
