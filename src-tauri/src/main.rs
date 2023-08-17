@@ -5,12 +5,11 @@
 
 mod cmd;
 mod error;
-mod model;
-mod parser;
+mod misc;
 
 fn main() {
   tauri::Builder::default()
-    .manage(model::AppState::default())
+    .manage(misc::SwaggerInfo::default())
     .invoke_handler(tauri::generate_handler![cmd::load_openapi_definition])
     .run(tauri::generate_context!())
     .expect("error while running tauri application");

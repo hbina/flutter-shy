@@ -1,7 +1,4 @@
-export const resolveStringTemplate = (
-  template: string,
-  translation: Readonly<Record<string, string>>
-) => {
+export const resolveStringTemplate = (template, translation) => {
   let resolvedPath = template;
   Object.entries(translation).forEach(([key, value]) => {
     resolvedPath = resolvedPath.replaceAll(`{${key}}`, `${value}`);
