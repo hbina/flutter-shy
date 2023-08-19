@@ -7,11 +7,15 @@ import { SelectFile } from "./SelectFile";
 const tableBorder = {
   border: "1px solid black",
   borderCollapse: "collapse",
-  padding: "5px",
+  padding: "2px",
+  margin: "3px",
 };
 const compactTableBorder = {
   border: "1px solid black",
   borderCollapse: "collapse",
+};
+const errorDivStyle = {
+  backgroundColor: "red",
 };
 
 const App = () => {
@@ -36,7 +40,7 @@ const App = () => {
       </div>
       <p>{swaggerInfo?.title ?? "no title"}</p>
       {swaggerInfo === undefined ? null : (
-        <PathDiv
+        <PathsDiv
           paths={swaggerInfo?.doc?.paths ?? {}}
           componentsInfo={componentsInfo}
         />
@@ -45,117 +49,229 @@ const App = () => {
   );
 };
 
-const PathDiv = ({ paths, componentsInfo }) => {
+const PathsDiv = ({ paths, componentsInfo }) => {
   return (
-    <div>
+    <div id={"paths-div"}>
       {Object.entries(paths).map(([path, methods]) => (
-        <div key={`${path}`} style={tableBorder}>
-          <p>{path}</p>
-          <div style={tableBorder}>
-            {Object.entries(methods).map(([method, parameter]) => {
-              return (
-                <div
-                  key={`${method}`}
-                  style={{
-                    display: "flex",
-                    flexDirection: "row",
-                    alignItems: "center",
-                    gap: "5px",
-                  }}
-                >
-                  <div>{method}</div>
-                  <div>
-                    {parameter?.operationId === undefined ||
-                    parameter.operationId == "" ? null : (
-                      <div style={tableBorder}>
-                        <div style={tableBorder}>{parameter.operationId}</div>
-                      </div>
-                    )}
-                    <div style={tableBorder}>
-                      <div style={tableBorder}>{parameter.summary}</div>
-                    </div>
-                    <div style={tableBorder}>
-                      <div style={tableBorder}>
-                        {typeof parameter.description !== "string"
-                          ? null
-                          : parameter.description
-                              .split("\n")
-                              .map((v, idx) => <div key={idx}>{v}</div>)}
-                      </div>
-                    </div>
-                    <div style={tableBorder}>
-                      <div style={tableBorder}>
-                        {Object.entries(parameter?.responses ?? {}).map(
-                          ([errorCode, { description }]) => (
-                            <div
-                              key={`${errorCode}`}
-                              style={{
-                                display: "flex",
-                                flexDirection: "row",
-                                alignItems: "center",
-                                gap: "5px",
-                              }}
-                            >
-                              <p>{errorCode}</p>
-                              <p>{description}</p>
-                            </div>
-                          )
-                        )}
-                      </div>
-                    </div>
-                    <div style={tableBorder}>
-                      <ParameterDiv
-                        parameter={parameter}
-                        componentsInfo={componentsInfo}
-                      />
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
+        <PathDiv
+          path={path}
+          methods={methods}
+          componentsInfo={componentsInfo}
+        />
+      ))}
+    </div>
+  );
+};
+
+const PathDiv = ({ path, methods, componentsInfo }) => {
+  return (
+    <div key={`${path}`} style={tableBorder}>
+      <p>{path}</p>
+      <div style={tableBorder}>
+        {Object.entries(methods).map(([methodName, methodObject]) => {
+          return (
+            <MethodDiv
+              methodName={methodName}
+              methodObject={methodObject}
+              componentsInfo={componentsInfo}
+            />
+          );
+        })}
+      </div>
+    </div>
+  );
+};
+
+const MethodDiv = ({ methodName, methodObject, componentsInfo }) => {
+  if (typeof methodName !== "string") {
+    return (
+      <div>{`Unable to render MethodDiv because 'method' is not a string`}</div>
+    );
+  }
+  return (
+    <div
+      id={`method-div-${methodName}`}
+      key={`${methodName}`}
+      style={{
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        gap: "5px",
+      }}
+    >
+      <div id={`method-div-title`}>{methodName}</div>
+      <div id={`method-div-detail`}>
+        {methodObject.operationId === undefined ||
+        methodObject.operationId === "" ? null : (
+          <div id={`method-div-detail-operation-id`} style={tableBorder}>
+            {methodObject.operationId}
           </div>
+        )}
+        {methodObject.summary === undefined ||
+        methodObject.summary === "" ? null : (
+          <div id={`method-div-detail-summary`} style={tableBorder}>
+            {methodObject.summary}
+          </div>
+        )}
+
+        {methodObject.description === undefined ||
+        methodObject.description === "" ? null : (
+          <div id={`method-div-detail-description`} style={tableBorder}>
+            {methodObject.description.split("\n").map((v, idx) => (
+              <div key={idx}>{v}</div>
+            ))}
+          </div>
+        )}
+        <ParametersDiv
+          parameters={methodObject?.parameters ?? []}
+          componentsInfo={componentsInfo}
+        />
+        <ResponseDiv responses={methodObject?.responses ?? {}} />
+      </div>
+    </div>
+  );
+};
+
+const ResponseDiv = ({ responses }) => {
+  return (
+    <div id={"response-div"} style={tableBorder}>
+      {Object.entries(responses).map(([httpCode, { description }]) => (
+        <div
+          id={`response-div-${httpCode}`}
+          key={`${httpCode}`}
+          style={{
+            ...tableBorder,
+            display: "flex",
+            flexDirection: "row",
+            alignItems: "center",
+            // gap: "5px",
+          }}
+        >
+          <div>{`${httpCode} ${description}`}</div>
         </div>
       ))}
     </div>
   );
 };
 
-const ParameterDiv = ({ parameter, componentsInfo }) => {
-  const result = (parameter?.parameters ?? []).map((v) => {
-    if (typeof v["$ref"] !== "string") {
-      if (componentsInfo[v["$ref"]] !== undefined) {
-        console.log("cannot find ", v["$ref"], "in the components info");
-      } else {
+const ParametersDiv = ({ parameters, componentsInfo }) => {
+  const result = parameters.map((v) => {
+    if (typeof v["$ref"] === "string") {
+      const vRef = v["$ref"];
+      if (componentsInfo[vRef] === undefined) {
         return (
-          <div style={compactTableBorder}>{componentsInfo[v["$ref"]]}</div>
+          <div
+            id={`parameter-div-error-${vRef}`}
+            style={errorDivStyle}
+          >{`Cannot find ref component '${vRef}' in the components info`}</div>
+        );
+      } else {
+        // TODO(hanif) - How to render this?
+        return (
+          <div id={`parameter-div-${vRef}`} style={compactTableBorder}>
+            {componentsInfo[vRef]}
+          </div>
         );
       }
     } else {
       return (
         <div
+          id={`parameter-div-${v.name}`}
           key={`${v.name}`}
           style={{
+            ...tableBorder,
             display: "flex",
             flexDirection: "row",
             alignItems: "center",
-            gap: "5px",
+            // gap: "5px",
           }}
         >
-          <div>{v.name}</div>
-          <div style={tableBorder}>
-            <div style={compactTableBorder}>{v.in ?? "-"}</div>
-            <div style={tableBorder}>
-              {(v.description ?? "-").split("\n").map((v, idx) => (
-                <div key={idx}>{v}</div>
-              ))}
-            </div>
+          <div id={`parameter-div-name`} style={tableBorder}>
+            {v.name}
+          </div>
+          <div
+            id={`parameter-div-detail`}
+            style={{
+              ...tableBorder,
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            {typeof v.in === "string" ? (
+              <div id={`parameter-div-detail-in`} style={tableBorder}>
+                {v.in}
+              </div>
+            ) : (
+              <div id={`parameter-div-detail-in-error`} style={errorDivStyle}>
+                {typeof v.in}
+              </div>
+            )}
+            {typeof v.description === "string" ? (
+              <div id={`parameter-div-detail-description`} style={tableBorder}>
+                {v.description.split("\n").map((v, idx) => (
+                  <div
+                    id={`parameter-div-detail-description-line-${idx}`}
+                    key={idx}
+                  >
+                    {v}
+                  </div>
+                ))}
+              </div>
+            ) : null}
+            <SchemaDiv schemaObject={v.schema} />
           </div>
         </div>
       );
     }
   });
-
   return result;
+};
+
+export const SchemaDiv = ({ name, schemaObject }) => {
+  if (typeof schemaObject.type === "string") {
+    if (schemaObject.type === "string") {
+      const id = `${name}-string`;
+      return (
+        <div id={`schema-div-string`} style={tableBorder}>
+          <div>string</div>
+          <input id={id} type="text" name={id} />
+        </div>
+      );
+    } else if (schemaObject.type === "boolean") {
+      const id = `${name}-string`;
+      return (
+        <div id={`schema-div-string`} style={tableBorder}>
+          <div>boolean</div>
+          <select>
+            <option value={true}>True</option>
+            <option value={false}>False</option>
+          </select>
+        </div>
+      );
+    } else if (schemaObject.type === "integer") {
+      const id = `${name}-string`;
+      return (
+        <div id={`schema-div-string`} style={tableBorder}>
+          <div>integer</div>
+          <input id={id} type="number" name={id} />
+        </div>
+      );
+    } else {
+      return (
+        <div
+          id={`schema-div-error`}
+          style={errorDivStyle}
+        >{`The schema of type '${schemaObject.type}' is not yet supported`}</div>
+      );
+    }
+  } else {
+    return (
+      <div
+        id={`schema-div-error`}
+        style={errorDivStyle}
+      >{`Unable to render SchemaDiv because 'type' is a ${typeof schemaObject.type}`}</div>
+    );
+  }
 };
 
 const getComponentsInfoFromSwaggerInfo = (swaggerInfo) => {
