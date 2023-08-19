@@ -21,7 +21,9 @@ const errorDivStyle = {
 const App = () => {
   const [swaggerInfo, setSwaggerInfo] = useState(undefined);
   const [fileError, setFileError] = useState(undefined);
-  const componentsInfo = getComponentsInfoFromSwaggerInfo(swaggerInfo);
+  const [curlState, setCurlState] = useState({});
+  // const componentsInfo = getComponentsInfoFromSwaggerInfo(swaggerInfo);
+  const componentsInfo = swaggerInfo?.componentsInfo ?? {};
 
   // console.log("componentsInfo", componentsInfo);
   usePageTitle(swaggerInfo?.title);
@@ -42,6 +44,8 @@ const App = () => {
       <p>{swaggerInfo?.title ?? "no title"}</p>
       {swaggerInfo === undefined ? null : (
         <PathsDiv
+          curlState={curlState}
+          setCurlState={setCurlState}
           paths={swaggerInfo?.doc?.paths ?? {}}
           componentsInfo={componentsInfo}
         />
@@ -50,7 +54,7 @@ const App = () => {
   );
 };
 
-const PathsDiv = ({ paths, componentsInfo }) => {
+const PathsDiv = ({ curlState, setCurlState, paths, componentsInfo }) => {
   return (
     <div id={"paths-div"}>
       {Object.entries(paths).map(([pathName, methods]) => {
@@ -58,7 +62,9 @@ const PathsDiv = ({ paths, componentsInfo }) => {
         return (
           <div key={`${pathName}`} style={tableBorder}>
             <PathDiv
-              path={pathName}
+              curlState={curlState}
+              setCurlState={setCurlState}
+              pathName={pathName}
               methods={methods}
               componentsInfo={componentsInfo}
             />
@@ -69,7 +75,13 @@ const PathsDiv = ({ paths, componentsInfo }) => {
   );
 };
 
-const PathDiv = ({ pathName, methods, componentsInfo }) => {
+const PathDiv = ({
+  curlState,
+  setCurlState,
+  pathName,
+  methods,
+  componentsInfo,
+}) => {
   return (
     <div id={`path-div-${pathName}`}>
       <p>{pathName}</p>
@@ -78,6 +90,9 @@ const PathDiv = ({ pathName, methods, componentsInfo }) => {
           return (
             <div key={`${methodName}`}>
               <MethodDiv
+                curlPath={`${pathName}-${methodName}`}
+                curlState={curlState}
+                setCurlState={setCurlState}
                 methodName={methodName}
                 methodObject={methodObject}
                 componentsInfo={componentsInfo}
@@ -90,10 +105,20 @@ const PathDiv = ({ pathName, methods, componentsInfo }) => {
   );
 };
 
-const MethodDiv = ({ methodName, methodObject, componentsInfo }) => {
+const MethodDiv = ({
+  curlPath,
+  curlState,
+  setCurlState,
+  methodName,
+  methodObject,
+  componentsInfo,
+}) => {
   if (typeof methodName !== "string") {
     return (
-      <div>{`Unable to render MethodDiv because 'method' is not a string`}</div>
+      <div
+        id={`method-div-error`}
+        style={errorDivStyle}
+      >{`Unable to render MethodDiv because 'method' is not a string`}</div>
     );
   }
   return (
@@ -131,10 +156,13 @@ const MethodDiv = ({ methodName, methodObject, componentsInfo }) => {
           </div>
         )}
         <ParametersDiv
+          curlPath={curlPath}
+          setCurlState={setCurlState}
           parameters={methodObject?.parameters ?? []}
           componentsInfo={componentsInfo}
         />
         <ResponseDiv responses={methodObject?.responses ?? {}} />
+        <CurlDiv curlPath={curlPath} curlState={curlState} />
       </div>
     </div>
   );
@@ -162,7 +190,12 @@ const ResponseDiv = ({ responses }) => {
   );
 };
 
-const ParametersDiv = ({ parameters, componentsInfo }) => {
+const ParametersDiv = ({
+  curlPath,
+  setCurlState,
+  parameters,
+  componentsInfo,
+}) => {
   const result = parameters.map((parameter) => {
     if (typeof parameter["$ref"] === "string") {
       const vRef = parameter["$ref"];
@@ -184,19 +217,27 @@ const ParametersDiv = ({ parameters, componentsInfo }) => {
         // TODO(hanif) - How to render this?
         return (
           <ParameterDiv
+            curlPath={curlPath}
+            setCurlState={setCurlState}
             id={`parameter-div-${vRef}`}
             parameter={componentsInfo[vRef]}
           />
         );
       }
     } else {
-      return <ParameterDiv parameter={parameter} />;
+      return (
+        <ParameterDiv
+          curlPath={curlPath}
+          setCurlState={setCurlState}
+          parameter={parameter}
+        />
+      );
     }
   });
   return result;
 };
 
-const ParameterDiv = ({ parameter }) => {
+const ParameterDiv = ({ curlPath, setCurlState, parameter }) => {
   return (
     <div
       id={`parameter-div-${parameter.name}`}
@@ -236,18 +277,23 @@ const ParameterDiv = ({ parameter }) => {
                 id={`parameter-div-detail-description-line-${idx}`}
                 key={idx}
               >
-                {"hello"}
+                {line}
               </div>
             ))}
           </div>
         ) : null}
-        <SchemaDiv name={parameter.name} schemaObject={parameter.schema} />
+        <SchemaDiv
+          curlPath={curlPath}
+          setCurlState={setCurlState}
+          name={parameter.name}
+          schemaObject={parameter.schema}
+        />
       </div>
     </div>
   );
 };
 
-export const SchemaDiv = ({ name, schemaObject }) => {
+export const SchemaDiv = ({ curlPath, setCurlState, name, schemaObject }) => {
   if (typeof schemaObject !== "object") {
     return (
       <div
@@ -261,14 +307,55 @@ export const SchemaDiv = ({ name, schemaObject }) => {
       return (
         <div id={id} style={tableBorder}>
           <div>string</div>
-          <input type="text" name={id} />
+          <input
+            type="text"
+            name={id}
+            onChange={(v) => {
+              if (typeof v?.target?.value === "string") {
+                setCurlState((oldS) => {
+                  const s = JSON.parse(JSON.stringify(oldS));
+                  if (s[curlPath] === undefined) {
+                    s[curlPath] = {};
+                  }
+                  s[curlPath][name] = v?.target?.value;
+                  return s;
+                });
+              } else {
+                console.log(
+                  `id='${id}' expected string from text input but got ${typeof v
+                    ?.target?.value}`,
+                  v?.target?.value
+                );
+              }
+            }}
+          />
         </div>
       );
     } else if (schemaObject.type === "boolean") {
       return (
         <div id={id} style={tableBorder}>
           <div>boolean</div>
-          <select>
+          <select
+            onChange={(v) => {
+              if (typeof v?.target?.value === "string") {
+                setCurlState((oldS) => {
+                  const s = JSON.parse(JSON.stringify(oldS));
+                  if (s[curlPath] === undefined) {
+                    s[curlPath] = {};
+                  }
+                  s[curlPath][name] =
+                    v?.target?.value === "true" ? true : false;
+                  return s;
+                });
+              } else {
+                console.log(
+                  `id='${id}' expected string from text input but got ${typeof v
+                    ?.target?.value}`,
+                  v?.target?.value
+                );
+              }
+            }}
+          >
             <option value={true}>True</option>
             <option value={false}>False</option>
           </select>
@@ -278,7 +365,28 @@ export const SchemaDiv = ({ name, schemaObject }) => {
       return (
         <div id={id} style={tableBorder}>
           <div>integer</div>
-          <input type="number" name={id} />
+          <input
+            type="number"
+            name={id}
+            onChange={(v) => {
+              if (typeof v?.target?.value === "string") {
+                setCurlState((oldS) => {
+                  const s = JSON.parse(JSON.stringify(oldS));
+                  if (s[curlPath] === undefined) {
+                    s[curlPath] = {};
+                  }
+                  s[curlPath][name] = parseInt(v?.target?.value);
+                  return s;
+                });
+              } else {
+                console.log(
+                  `id='${id}' expected string from text input but got ${typeof v
+                    ?.target?.value}`,
+                  v?.target?.value
+                );
+              }
+            }}
+          />
         </div>
       );
     } else {
@@ -299,20 +407,22 @@ export const SchemaDiv = ({ name, schemaObject }) => {
   }
 };
 
-const getComponentsInfoFromSwaggerInfo = (swaggerInfo) => {
-  const innerImpl = (obj, accPath, accResult) => {
-    accResult[accPath] = obj;
-    if (typeof obj === "object" && obj !== null) {
-      // Means we have to dig deeper
-      for (const [path, childObj] of Object.entries(obj)) {
-        innerImpl(childObj, accPath + "/" + path, accResult);
-      }
-    }
-  };
-
-  const result = {};
-  innerImpl(swaggerInfo?.doc?.components ?? {}, "#/components", result);
-  return result;
+const CurlDiv = ({ curlPath, curlState }) => {
+  if (typeof curlState !== "object") {
+    return (
+      <div
+        id={`curl-div-error`}
+        style={errorDivStyle}
+      >{`'curlState' should be an object but it is an ${typeof curlState}`}</div>
+    );
+  } else if (curlState[curlPath] === undefined) {
+    return <div>{curlPath}</div>;
+  } else {
+    const queries = Object.entries(curlState[curlPath])
+      .map(([k, v]) => `${k}=${v}`)
+      .join("&");
+    return <div>{`${curlPath}?${queries}`}</div>;
+  }
 };
 
 const usePageTitle = (title) => {
