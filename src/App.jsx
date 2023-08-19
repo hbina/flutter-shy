@@ -23,6 +23,7 @@ const App = () => {
   const [fileError, setFileError] = useState(undefined);
   const componentsInfo = getComponentsInfoFromSwaggerInfo(swaggerInfo);
 
+  // console.log("componentsInfo", componentsInfo);
   usePageTitle(swaggerInfo?.title);
 
   return (
@@ -52,29 +53,36 @@ const App = () => {
 const PathsDiv = ({ paths, componentsInfo }) => {
   return (
     <div id={"paths-div"}>
-      {Object.entries(paths).map(([path, methods]) => (
-        <PathDiv
-          path={path}
-          methods={methods}
-          componentsInfo={componentsInfo}
-        />
-      ))}
+      {Object.entries(paths).map(([pathName, methods]) => {
+        // TODO(hanif) - Validate that its a string
+        return (
+          <div key={`${pathName}`} style={tableBorder}>
+            <PathDiv
+              path={pathName}
+              methods={methods}
+              componentsInfo={componentsInfo}
+            />
+          </div>
+        );
+      })}
     </div>
   );
 };
 
-const PathDiv = ({ path, methods, componentsInfo }) => {
+const PathDiv = ({ pathName, methods, componentsInfo }) => {
   return (
-    <div key={`${path}`} style={tableBorder}>
-      <p>{path}</p>
+    <div id={`path-div-${pathName}`}>
+      <p>{pathName}</p>
       <div style={tableBorder}>
         {Object.entries(methods).map(([methodName, methodObject]) => {
           return (
-            <MethodDiv
-              methodName={methodName}
-              methodObject={methodObject}
-              componentsInfo={componentsInfo}
-            />
+            <div key={`${methodName}`}>
+              <MethodDiv
+                methodName={methodName}
+                methodObject={methodObject}
+                componentsInfo={componentsInfo}
+              />
+            </div>
           );
         })}
       </div>
@@ -155,92 +163,110 @@ const ResponseDiv = ({ responses }) => {
 };
 
 const ParametersDiv = ({ parameters, componentsInfo }) => {
-  const result = parameters.map((v) => {
-    if (typeof v["$ref"] === "string") {
-      const vRef = v["$ref"];
+  const result = parameters.map((parameter) => {
+    if (typeof parameter["$ref"] === "string") {
+      const vRef = parameter["$ref"];
       if (componentsInfo[vRef] === undefined) {
         return (
           <div
             id={`parameter-div-error-${vRef}`}
             style={errorDivStyle}
-          >{`Cannot find ref component '${vRef}' in the components info`}</div>
+          >{`Cannot find ref component '${vRef}' in the componentsInfo`}</div>
+        );
+      } else if (typeof componentsInfo[vRef] !== "object") {
+        return (
+          <div
+            id={`parameter-div-error-${vRef}`}
+            style={errorDivStyle}
+          >{`The value at '${vRef}' in the componentsInfo is not an object`}</div>
         );
       } else {
         // TODO(hanif) - How to render this?
         return (
-          <div id={`parameter-div-${vRef}`} style={compactTableBorder}>
-            {componentsInfo[vRef]}
-          </div>
+          <ParameterDiv
+            id={`parameter-div-${vRef}`}
+            parameter={componentsInfo[vRef]}
+          />
         );
       }
     } else {
-      return (
-        <div
-          id={`parameter-div-${v.name}`}
-          key={`${v.name}`}
-          style={{
-            ...tableBorder,
-            display: "flex",
-            flexDirection: "row",
-            alignItems: "center",
-            // gap: "5px",
-          }}
-        >
-          <div id={`parameter-div-name`} style={tableBorder}>
-            {v.name}
-          </div>
-          <div
-            id={`parameter-div-detail`}
-            style={{
-              ...tableBorder,
-              display: "flex",
-              flexDirection: "column",
-            }}
-          >
-            {typeof v.in === "string" ? (
-              <div id={`parameter-div-detail-in`} style={tableBorder}>
-                {v.in}
-              </div>
-            ) : (
-              <div id={`parameter-div-detail-in-error`} style={errorDivStyle}>
-                {typeof v.in}
-              </div>
-            )}
-            {typeof v.description === "string" ? (
-              <div id={`parameter-div-detail-description`} style={tableBorder}>
-                {v.description.split("\n").map((v, idx) => (
-                  <div
-                    id={`parameter-div-detail-description-line-${idx}`}
-                    key={idx}
-                  >
-                    {v}
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            <SchemaDiv schemaObject={v.schema} />
-          </div>
-        </div>
-      );
+      return <ParameterDiv parameter={parameter} />;
     }
   });
   return result;
 };
 
+const ParameterDiv = ({ parameter }) => {
+  return (
+    <div
+      id={`parameter-div-${parameter.name}`}
+      key={`${parameter.name}`}
+      style={{
+        ...tableBorder,
+        display: "flex",
+        flexDirection: "row",
+        alignItems: "center",
+        // gap: "5px",
+      }}
+    >
+      <div id={`parameter-div-name`} style={tableBorder}>
+        {parameter.name}
+      </div>
+      <div
+        id={`parameter-div-detail`}
+        style={{
+          ...tableBorder,
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        {typeof parameter.in === "string" ? (
+          <div id={`parameter-div-detail-in`} style={tableBorder}>
+            {parameter.in}
+          </div>
+        ) : (
+          <div id={`parameter-div-detail-in-error`} style={errorDivStyle}>
+            {typeof parameter.in}
+          </div>
+        )}
+        {typeof parameter.description === "string" ? (
+          <div id={`parameter-div-detail-description`} style={tableBorder}>
+            {parameter.description.split("\n").map((line, idx) => (
+              <div
+                id={`parameter-div-detail-description-line-${idx}`}
+                key={idx}
+              >
+                {"hello"}
+              </div>
+            ))}
+          </div>
+        ) : null}
+        <SchemaDiv name={parameter.name} schemaObject={parameter.schema} />
+      </div>
+    </div>
+  );
+};
+
 export const SchemaDiv = ({ name, schemaObject }) => {
-  if (typeof schemaObject.type === "string") {
+  if (typeof schemaObject !== "object") {
+    return (
+      <div
+        id={`schema-div-error`}
+        style={errorDivStyle}
+      >{`The schemaObject of type '${typeof schemaObject}' is not yet supported`}</div>
+    );
+  } else if (typeof schemaObject.type === "string") {
+    const id = `schema-div-${schemaObject.type}-${name}`;
     if (schemaObject.type === "string") {
-      const id = `${name}-string`;
       return (
-        <div id={`schema-div-string`} style={tableBorder}>
+        <div id={id} style={tableBorder}>
           <div>string</div>
-          <input id={id} type="text" name={id} />
+          <input type="text" name={id} />
         </div>
       );
     } else if (schemaObject.type === "boolean") {
-      const id = `${name}-string`;
       return (
-        <div id={`schema-div-string`} style={tableBorder}>
+        <div id={id} style={tableBorder}>
           <div>boolean</div>
           <select>
             <option value={true}>True</option>
@@ -249,11 +275,10 @@ export const SchemaDiv = ({ name, schemaObject }) => {
         </div>
       );
     } else if (schemaObject.type === "integer") {
-      const id = `${name}-string`;
       return (
-        <div id={`schema-div-string`} style={tableBorder}>
+        <div id={id} style={tableBorder}>
           <div>integer</div>
-          <input id={id} type="number" name={id} />
+          <input type="number" name={id} />
         </div>
       );
     } else {
@@ -286,7 +311,7 @@ const getComponentsInfoFromSwaggerInfo = (swaggerInfo) => {
   };
 
   const result = {};
-  innerImpl(swaggerInfo?.doc?.components ?? {}, "#", result);
+  innerImpl(swaggerInfo?.doc?.components ?? {}, "#/components", result);
   return result;
 };
 
