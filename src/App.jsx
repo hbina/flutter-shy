@@ -1,6 +1,6 @@
 import "bootstrap/dist/css/bootstrap.min.css";
 
-import { useState, memo } from "react";
+import { useState, useEffect, memo } from "react";
 
 import { SelectFile } from "./SelectFile";
 
@@ -18,12 +18,21 @@ const App = () => {
   const [swaggerInfo, setSwaggerInfo] = useState(undefined);
   const [fileError, setFileError] = useState(undefined);
   const [baseUrl, setBaseUrl] = useState("");
+  // TODO(hanif) - Need to reset curlState when swagger is updated.
   const [curlState, setCurlState] = useState({});
-  // const componentsInfo = getComponentsInfoFromSwaggerInfo(swaggerInfo);
+  const [debCurlState, setDebCurlState] = useState({});
+
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      setDebCurlState(curlState);
+    }, 100);
+    return () => clearTimeout(timeoutId);
+  }, [curlState, 100]);
+
   const componentsInfo = swaggerInfo?.componentsInfo ?? {};
   const servers = swaggerInfo?.servers ?? [];
 
-  console.log("curlState", curlState);
+  console.log("curlState", curlState, "debCurlState", debCurlState);
 
   return (
     <div
@@ -34,9 +43,9 @@ const App = () => {
     >
       <SelectFile setFileContent={setSwaggerInfo} setFileError={setFileError} />
       <div>
-        {fileError === undefined ? null : (
-          <p>{`Cannot parse the file as a swagger because ${fileError}`}</p>
-        )}
+        {fileError !== undefined ? (
+          <div>{`Cannot parse the file as a swagger because ${fileError}`}</div>
+        ) : null}
       </div>
       <div>
         {swaggerInfo?.title === undefined
@@ -65,7 +74,7 @@ const App = () => {
       {swaggerInfo === undefined ? null : (
         <PathsDiv
           baseUrl={baseUrl}
-          curlState={curlState}
+          curlState={debCurlState}
           setCurlState={setCurlState}
           paths={swaggerInfo?.doc?.paths ?? {}}
           componentsInfo={componentsInfo}
@@ -135,30 +144,22 @@ const PathDiv = ({
     <div
     //  id={`path-div-${pathName}`}
     >
-      <p>{pathName}</p>
       <div style={tableBorder}>
         {Object.entries(methods).map(([methodName, methodObject]) => {
-          // setCurlState((oldS) => {
-          //   const s = JSON.parse(JSON.stringify(oldS));
-          //   if (s[methodName] === undefined) {
-          //     s[methodName] = {};
-          //   }
-          //   if (s[methodName][pathName] === undefined) {
-          //     s[methodName][pathName] = {};
-          //   }
-          //   return s;
-          // });
           return (
-            <div key={`${methodName}`}>
-              <MethodDiv
-                baseUrl={baseUrl}
-                pathName={pathName}
-                curlState={curlState}
-                setCurlState={setCurlState}
-                methodName={methodName}
-                methodObject={methodObject}
-                componentsInfo={componentsInfo}
-              />
+            <div key={`${methodName}`} style={tableBorder}>
+              <details>
+                <summary>{methodName}</summary>
+                <MethodDiv
+                  baseUrl={baseUrl}
+                  pathName={pathName}
+                  curlState={curlState}
+                  setCurlState={setCurlState}
+                  methodName={methodName}
+                  methodObject={methodObject}
+                  componentsInfo={componentsInfo}
+                />
+              </details>
             </div>
           );
         })}
@@ -186,68 +187,60 @@ const MethodDiv = ({
   }
   return (
     <div
-      // id={`method-div-${pathName}`}
-      key={`${methodName}`}
-      style={{
-        display: "flex",
-        flexDirection: "row",
-        alignItems: "center",
-        gap: "5px",
-      }}
+    //  id={`method-div-${pathName}-detail`}
     >
-      <div
-      //  id={`method-div-${pathName}-title`}
-      >
-        {methodName}
-      </div>
-      <div
-      //  id={`method-div-${pathName}-detail`}
-      >
-        {methodObject.operationId === undefined ||
-        methodObject.operationId === "" ? null : (
-          <div
-            // id={`method-div-${pathName}-detail-operation-id`}
-            style={tableBorder}
-          >
-            {methodObject.operationId}
-          </div>
-        )}
-        {methodObject.summary === undefined ||
-        methodObject.summary === "" ? null : (
-          <div
-            // id={`method-div-${pathName}-detail-summary`}
-            style={tableBorder}
-          >
-            {methodObject.summary}
-          </div>
-        )}
+      <div>Details</div>
+      {methodObject.operationId === undefined ||
+      methodObject.operationId === "" ? null : (
+        <div
+          // id={`method-div-${pathName}-detail-operation-id`}
+          style={tableBorder}
+        >
+          {methodObject.operationId}
+        </div>
+      )}
+      {methodObject.summary === undefined ||
+      methodObject.summary === "" ? null : (
+        <div
+          // id={`method-div-${pathName}-detail-summary`}
+          style={tableBorder}
+        >
+          {methodObject.summary}
+        </div>
+      )}
 
-        {methodObject.description === undefined ||
-        methodObject.description === "" ? null : (
-          <div
-            // id={`method-div-${pathName}-detail-description`}
-            style={tableBorder}
-          >
-            {methodObject.description.split("\n").map((v, idx) => (
-              <div key={idx}>{v}</div>
-            ))}
-          </div>
-        )}
-        <ParametersDiv
-          methodName={methodName}
-          pathName={pathName}
-          setCurlState={setCurlState}
-          parameters={methodObject?.parameters ?? []}
-          componentsInfo={componentsInfo}
-        />
-        <ResponsesDiv responses={methodObject?.responses ?? {}} />
-        <CurlDiv
-          baseUrl={baseUrl}
-          methodName={methodName}
-          pathName={pathName}
-          curlState={curlState}
-        />
-      </div>
+      {methodObject.description === undefined ||
+      methodObject.description === "" ? null : (
+        <div
+          // id={`method-div-${pathName}-detail-description`}
+          style={tableBorder}
+        >
+          {methodObject.description.split("\n").map((v, idx) => (
+            <div key={idx}>{v}</div>
+          ))}
+        </div>
+      )}
+      {(methodObject?.parameters ?? []).length !== 0 ? (
+        <div>
+          <div>Parameters</div>
+          <ParametersDiv
+            methodName={methodName}
+            pathName={pathName}
+            setCurlState={setCurlState}
+            parameters={methodObject?.parameters ?? []}
+            componentsInfo={componentsInfo}
+          />
+        </div>
+      ) : null}
+      <div>Responses</div>
+      <ResponsesDiv responses={methodObject?.responses ?? {}} />
+      <div>cURL command</div>
+      <CurlDiv
+        baseUrl={baseUrl}
+        methodName={methodName}
+        pathName={pathName}
+        curlState={curlState}
+      />
     </div>
   );
 };
@@ -280,13 +273,13 @@ const ParametersDiv = ({
   parameters,
   componentsInfo,
 }) => {
-  const result = parameters.map((parameter) => {
+  const result = parameters.map((parameter, idx) => {
     if (typeof parameter["$ref"] === "string") {
       const vRef = parameter["$ref"];
       if (componentsInfo[vRef] === undefined) {
         return (
           <div
-            key={`parameter-div-${vRef}`}
+            key={`parameter-div-${vRef}-${idx}`}
             // id={`parameter-div-error-${vRef}`}
             style={errorDivStyle}
           >{`Cannot find ref component '${vRef}' in the componentsInfo`}</div>
@@ -294,7 +287,7 @@ const ParametersDiv = ({
       } else if (typeof componentsInfo[vRef] !== "object") {
         return (
           <div
-            key={`parameter-div-${vRef}`}
+            key={`parameter-div-${vRef}-${idx}`}
             // id={`parameter-div-error-${vRef}`}
             style={errorDivStyle}
           >{`The value at '${vRef}' in the componentsInfo is not an object`}</div>
@@ -302,7 +295,7 @@ const ParametersDiv = ({
       } else {
         // TODO(hanif) - How to render this?
         return (
-          <div key={`parameter-div-${vRef}`}>
+          <div key={`parameter-div-${vRef}-${idx}`}>
             <ParameterDiv
               methodName={methodName}
               pathName={pathName}
@@ -315,6 +308,7 @@ const ParametersDiv = ({
     } else {
       return (
         <ParameterDiv
+          key={`parameter-div-${parameter.name}-${idx}`}
           methodName={methodName}
           pathName={pathName}
           setCurlState={setCurlState}
@@ -405,7 +399,11 @@ const handleInputChange = ({ methodName, pathName, name, setCurlState, v }) => {
       if (s[methodName][pathName] === undefined) {
         s[methodName][pathName] = {};
       }
-      s[methodName][pathName][name] = v?.target?.value;
+      if (v?.target?.value == "") {
+        delete s[methodName][pathName][name];
+      } else {
+        s[methodName][pathName][name] = v?.target?.value;
+      }
       return s;
     });
   }
@@ -503,16 +501,23 @@ const CurlDiv = ({ baseUrl, methodName, pathName, curlState }) => {
         style={errorDivStyle}
       >{`'curlState' should be an object but it is an ${typeof curlState}`}</div>
     );
-  } else if (curlState[methodName] === undefined) {
-    return <div>{`Cannot find '${methodName}' in curlState`}</div>;
-  } else if (curlState[methodName][pathName] === undefined) {
-    return <div>{`Cannot find '${methodName}/${pathName}' in curlState`}</div>;
+  } else if (
+    curlState[methodName] === undefined ||
+    curlState[methodName][pathName] === undefined
+  ) {
+    return (
+      <div
+        style={tableBorder}
+      >{`curl -X ${methodName.toUpperCase()} \"${baseUrl}${pathName}\"`}</div>
+    );
   } else {
     const queries = Object.entries(curlState[methodName][pathName])
       .map(([k, v]) => `${k}=${v}`)
       .join("&");
     return (
-      <div>{`curl -X ${methodName.toUpperCase()} ${baseUrl}${pathName}?${queries}`}</div>
+      <div
+        style={tableBorder}
+      >{`curl -X ${methodName.toUpperCase()} \"${baseUrl}${pathName}?${queries}\"`}</div>
     );
   }
 };
