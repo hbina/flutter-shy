@@ -6,6 +6,7 @@ use serde::{Deserialize, Serialize};
 pub struct SwaggerInfo {
   pub title: Option<String>,
   pub doc: serde_yaml::Value,
+  pub servers: Vec<String>,
   #[serde(rename = "componentsInfo")]
   pub components_info: HashMap<String, serde_yaml::Value>,
 }
@@ -58,9 +59,16 @@ fn impl_get_swagger_components_info(
   }
 }
 
-// pub fn get_swagger_paths(doc: &serde_yaml::Value) -> Option<Vec<String>> {
-//   match doc.get("paths")? {
-//     serde_yaml::Value::Mapping(v) => todo!(),
-//     _ => return None,
-//   }
-// }
+pub fn get_swagger_servers(doc: &serde_yaml::Value) -> Vec<String> {
+  match doc.get("servers") {
+    Some(serde_yaml::Value::Sequence(v)) => v
+      .iter()
+      .flat_map(|s| match s {
+        serde_yaml::Value::Mapping(o) => o.get("url").and_then(|s| s.as_str()),
+        _ => None,
+      })
+      .map(|s| s.to_string())
+      .collect::<Vec<_>>(),
+    _ => return Vec::default(),
+  }
+}
